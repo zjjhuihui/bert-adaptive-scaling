@@ -19,7 +19,7 @@ from __future__ import print_function
 import collections
 import csv
 import os
-os.chdir('D:/G-工作盘/Telesales项目/许洋项目数据/code/')
+os.chdir('../code/')
 import modeling
 import optimization
 import tokenization
@@ -35,28 +35,25 @@ flags = tf.flags
 FLAGS = flags.FLAGS
 ## Required parameters
 flags.DEFINE_string(
-    "data_dir", "D:/G-工作盘/Telesales项目/许洋项目数据/code/Agent一折/",
+    "data_dir", "../Agent一折/",
     "The input data dir. Should contain the .tsv files (or other data files) "
     "for the task.")
-#"D:/G-工作盘/细粒度用户评论情感分析/181115-BERT/XNLI-MT-1.0/"
 flags.DEFINE_string(
-    "bert_config_file", "D:/G-工作盘/Telesales项目/许洋项目数据/code/uncased_L-12_H-768_A-12/bert_config.json",
+    "bert_config_file", "../code/uncased_L-12_H-768_A-12/bert_config.json",
     "The config json file corresponding to the pre-trained BERT model. "
     "This specifies the model architecture.")
 
 flags.DEFINE_string("task_name", "telesales", "The name of the task to train.")
 #"Xnli"
-flags.DEFINE_string("vocab_file", "D:/G-工作盘/Telesales项目/许洋项目数据/code/uncased_L-12_H-768_A-12/vocab.txt",
+flags.DEFINE_string("vocab_file", "../uncased_L-12_H-768_A-12/vocab.txt",
                     "The vocabulary file that the BERT model was trained on.")
 
 flags.DEFINE_string(
-    "output_dir", "D:/G-工作盘/Telesales项目/许洋项目数据/code/data_output/",
+    "output_dir", "../data_output/",
     "The output directory where the model checkpoints will be written.")
-#"D:/G-工作盘/细粒度用户评论情感分析/181115-BERT/Xnli_output/"
-## Other parameters
 
 flags.DEFINE_string(
-    "init_checkpoint", "D:/G-工作盘/Telesales项目/许洋项目数据/code/uncased_L-12_H-768_A-12/bert_model.ckpt",
+    "init_checkpoint", "../uncased_L-12_H-768_A-12/bert_model.ckpt",
     "Initial checkpoint (usually from a pre-trained BERT model).")
 
 flags.DEFINE_bool(
@@ -197,7 +194,7 @@ class DataProcessor(object):
     """Gets the list of labels for this data set."""
     raise NotImplementedError()
 
-  @classmethod  #cls不明白是什么，为什么要有这个？
+  @classmethod  
   def _read_tsv(cls, input_file, quotechar=None):
     """Reads a tab separated value file."""
     with tf.gfile.Open(input_file, "r") as f:
@@ -729,11 +726,14 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
 
     logits = tf.matmul(output_layer, output_weights, transpose_b=True)
     logits = tf.nn.bias_add(logits, output_bias)
+    probabilities = tf.nn.softmax(logits, axis=-1)  #tf.nn.softmax可以在列的维度上进行softmax的计算：
+    log_probs = tf.nn.log_softmax(logits, axis=-1)
+    
     softmax_layer = MaskedSoftmaxLayer("softmax_layer")  #MaskedSoftmaxLayer不用的话该句省略
     probs = softmax_layer(logits)#MaskedSoftmaxLayer不用的话该句省略
-    batch_idx = tf.range(tf.shape(probs)[0])#MaskedSoftmaxLayer不用的话该句省略
-    label_with_idx = tf.concat([tf.expand_dims(t, 1) for t in [batch_idx,labels]], 1)#MaskedSoftmaxLayer不用的话该句省略
-    golden_prob = tf.gather_nd(probs,label_with_idx)#MaskedSoftmaxLayer不用的话该句省略
+    batch_idx = tf.range(tf.shape(probs)[0])#MaskedSoftmaxLayer不用的话该句中probs替换为probabilities
+    label_with_idx = tf.concat([tf.expand_dims(t, 1) for t in [batch_idx,labels]], 1)
+    golden_prob = tf.gather_nd(probs,label_with_idx)
     positive_idx=1-labels  #前提是少类别必须为0，较多类别为1
     negative_idx=1-positive_idx
     m = tf.reduce_sum(positive_idx)  #M为真实为正的个数，与尝试概念P为预测为正类的概念相反
@@ -749,8 +749,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     loss_weight = all_one * positive_idx + all_one * neg_weight * negative_idx
     loss = - loss_weight * tf.log(golden_prob +1e-8)
     loss=tf.reduce_mean(loss)
-    probabilities = tf.nn.softmax(logits, axis=-1)  #tf.nn.softmax可以在列的维度上进行softmax的计算：
-    log_probs = tf.nn.log_softmax(logits, axis=-1)
+
 
     one_hot_labels = tf.one_hot(labels, depth=num_labels, dtype=tf.float32)
 
