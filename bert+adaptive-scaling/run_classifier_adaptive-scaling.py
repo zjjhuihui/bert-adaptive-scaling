@@ -731,10 +731,11 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     
     softmax_layer = MaskedSoftmaxLayer("softmax_layer")  #MaskedSoftmaxLayer不用的话该句省略
     probs = softmax_layer(logits)#MaskedSoftmaxLayer不用的话该句省略
-    batch_idx = tf.range(tf.shape(probs)[0])#MaskedSoftmaxLayer不用的话该句中probs替换为probabilities
-    label_with_idx = tf.concat([tf.expand_dims(t, 1) for t in [batch_idx,labels]], 1)
-    golden_prob = tf.gather_nd(probs,label_with_idx)
-    positive_idx=1-labels  #前提是少类别必须为0，较多类别为1
+    batch_idx = tf.range(tf.shape(probs)[0])#MaskedSoftmaxLayer不用的话该句省略
+    label_with_idx = tf.concat([tf.expand_dims(t, 1) for t in [batch_idx,labels]], 1)#MaskedSoftmaxLayer不用的话该句省略
+    golden_prob = tf.gather_nd(probs,label_with_idx)#MaskedSoftmaxLayer不用的话该句省略
+    positive_idx=1-labels  #适用于二分类，但是前提是少类别必须为0，较多类别为1
+    #positive_idx=tf.cast(labels<3,tf.float32)#适用于多分类，但是前提是类别数从小到大排列
     negative_idx=1-positive_idx
     m = tf.reduce_sum(positive_idx)  #M为真实为正的个数，与尝试概念P为预测为正类的概念相反
     n = tf.reduce_sum(negative_idx)   #n为真实为负的个数N
@@ -748,13 +749,11 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     all_one = tf.ones(tf.shape(golden_prob))
     loss_weight = all_one * positive_idx + all_one * neg_weight * negative_idx
     loss = - loss_weight * tf.log(golden_prob +1e-8)
-    loss=tf.reduce_mean(loss)
-
-
+    per_example_loss = -tf.reduce_sum(loss, axis=-1) #验证集中使用该公式计算损失
+    loss=tf.reduce_mean(per_example_loss)
     one_hot_labels = tf.one_hot(labels, depth=num_labels, dtype=tf.float32)
-
-    per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)
-    loss_cross_entropy = tf.reduce_mean(per_example_loss) #原来bert代码的内容
+    #per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)#原bert代码的内容
+    #loss = tf.reduce_mean(per_example_loss) #原来bert代码的内容
 
     return (loss, per_example_loss, logits, probabilities)
 
