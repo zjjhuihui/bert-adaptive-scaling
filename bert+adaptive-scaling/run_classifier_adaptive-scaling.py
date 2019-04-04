@@ -748,8 +748,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     neg_weight = p1 / (tf.cast((beta2 *m)+n,tf.float32)-p2 + 1e-8)
     all_one = tf.ones(tf.shape(golden_prob))
     loss_weight = all_one * positive_idx + all_one * neg_weight * negative_idx
-    loss = - loss_weight * tf.log(golden_prob +1e-8)
-    per_example_loss = -tf.reduce_sum(loss, axis=-1) #验证集中使用该公式计算损失
+    per_example_loss = - loss_weight * tf.log(golden_prob +1e-8) #验证集中使用该公式计算损失
     loss=tf.reduce_mean(per_example_loss)
     one_hot_labels = tf.one_hot(labels, depth=num_labels, dtype=tf.float32)
     #per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)#原bert代码的内容
