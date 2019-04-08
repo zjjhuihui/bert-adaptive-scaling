@@ -731,9 +731,9 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     
     softmax_layer = MaskedSoftmaxLayer("softmax_layer")  #MaskedSoftmaxLayer不用的话该句省略
     probs = softmax_layer(logits)#MaskedSoftmaxLayer不用的话该句省略
-    batch_idx = tf.range(tf.shape(probs)[0])#MaskedSoftmaxLayer不用的话该句省略
-    label_with_idx = tf.concat([tf.expand_dims(t, 1) for t in [batch_idx,labels]], 1)#MaskedSoftmaxLayer不用的话该句省略
-    golden_prob = tf.gather_nd(probs,label_with_idx)#MaskedSoftmaxLayer不用的话该句省略
+    batch_idx = tf.range(tf.shape(probs)[0])#MaskedSoftmaxLayer不用的话该句中prob替换为probabilities
+    label_with_idx = tf.concat([tf.expand_dims(t, 1) for t in [batch_idx,labels]], 1)
+    golden_prob = tf.gather_nd(probs,label_with_idx) #MaskedSoftmaxLayer不用的话该句中的probs替换为probabilities
     positive_idx=1-labels  #适用于二分类，但是前提是少类别必须为0，较多类别为1
     #positive_idx=tf.cast(labels<3,tf.float32)#适用于多分类，但是前提是类别数从小到大排列
     negative_idx=1-positive_idx
