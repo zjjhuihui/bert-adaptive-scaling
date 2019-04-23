@@ -737,7 +737,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     positive_idx=1-labels  #适用于二分类，但是前提是少类别必须为0，较多类别为1
     #positive_idx=tf.cast(labels<3,tf.float32)#适用于多分类，但是前提是类别数从小到大排列，这里表示把靠前的0 1 2类当作正类。
     negative_idx=1-positive_idx
-    m = tf.reduce_sum(positive_idx)  #M为真实为正的个数，与尝试概念P为预测为正类的概念相反
+    m = tf.reduce_sum(positive_idx)  #M为真实为正的个数，与常识概念P为预测为正类的概念相反
     n = tf.reduce_sum(negative_idx)   #n为真实为负的个数N
     positive_idx=tf.cast(positive_idx, tf.float32)
     negative_idx=tf.cast(negative_idx, tf.float32)
